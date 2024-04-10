@@ -178,7 +178,7 @@ class TypesSidebarWidget(SidebarWidget):
 		preprocessOnly.setCheckState(Qt.Checked if QSettings().value("plugin.typeInspector.preprocessOnly", '0') == '1' else Qt.Unchecked)
 
 	def notifyOffsetChanged(self, offset):
-		self.offset.setText(hex(offset))
+		pass
 
 	def notifyViewChanged(self, view_frame):
 		pass
@@ -334,6 +334,16 @@ class TypesSidebarWidget(SidebarWidget):
 						member = QTreeWidgetItem([m.name, hexornone(m.offset)])
 						create_type_tree(member, m.type)
 						members.addChild(member)
+					base_structures = QTreeWidgetItem(["base_structures", f"len: {len(type.base_structures)}"])
+					tree.addChild(base_structures)
+					for i, b in enumerate(type.base_structures):
+						base_structure = QTreeWidgetItem([str(b.type.name), f"index: {i}"])
+						base_structure.addChild(QTreeWidgetItem(["offset", hexornone(b.offset)]))
+						base_structure.addChild(QTreeWidgetItem(["width", hexornone(b.width)]))
+						base_structure_type = QTreeWidgetItem(["type"])
+						create_type_tree(base_structure_type, b.type)
+						base_structure.addChild(base_structure_type)
+						base_structures.addChild(base_structure)
 				elif type.type_class == TypeClass.EnumerationTypeClass:
 					tree = QTreeWidgetItem(["enum", str(type)])
 					root.addChild(tree)
