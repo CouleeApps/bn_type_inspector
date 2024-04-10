@@ -21,7 +21,7 @@ import shlex
 import traceback
 from typing import Optional
 
-from binaryninja import Platform, TypeParserResult, Type, TypeClass, ThemeColor, TypeParser, ParsedType, QualifiedNameTypeAndId
+from binaryninja import Platform, TypeParserResult, Type, TypeClass, ThemeColor, TypeParser, ParsedType, QualifiedNameTypeAndId, core_version_info
 from binaryninjaui import SidebarWidget, SidebarWidgetType, Sidebar, UIActionHandler, getMonospaceFont, getThemeColor, \
 	UIContext
 from PySide6 import QtCore
@@ -240,6 +240,9 @@ class TypesSidebarWidget(SidebarWidget):
 				if bv is not None:
 					for (name, type) in bv.types:
 						existing_types.append(QualifiedNameTypeAndId(name, bv.get_type_id(name), type))
+
+			if (core_version_info().major, core_version_info().minor, core_version_info().build) >= (4, 1, 5067):
+				existing_types = bv
 
 			if self.preprocess_only:
 				result, errors = self.type_parser.preprocess_source(conts, "input.hpp", self.platform, existing_types, shlex.split(options), [])
