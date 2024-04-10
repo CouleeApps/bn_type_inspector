@@ -1,4 +1,6 @@
-MIGRATED: Now lives at [https://github.com/CouleeApps/bn_inspectors](https://github.com/CouleeApps/bn_inspectors).
+bn_type_inspector
+--
 
-# bn_type_inspector
+Part of [my sidebar collection](https://github.com/CouleeApps/bn_inspectors)
+
 Type inspector sidebar plugin
