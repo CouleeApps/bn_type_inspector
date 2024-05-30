@@ -241,7 +241,7 @@ class TypesSidebarWidget(SidebarWidget):
 					for (name, type) in bv.types:
 						existing_types.append(QualifiedNameTypeAndId(name, bv.get_type_id(name), type))
 
-			if (core_version_info().major, core_version_info().minor, core_version_info().build) >= (4, 1, 5067):
+			if (core_version_info().major, core_version_info().minor, core_version_info().build) >= (4, 1, 5067) or core_version_info().build == 0:
 				existing_types = bv
 
 			if self.preprocess_only:
