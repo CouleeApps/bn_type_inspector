@@ -21,7 +21,7 @@ import shlex
 import traceback
 from typing import Optional
 
-from binaryninja import Platform, TypeParserResult, Type, TypeClass, ThemeColor, TypeParser, ParsedType, QualifiedNameTypeAndId, core_version_info
+from binaryninja import Platform, TypeParserResult, Type, TypeClass, ThemeColor, TypeParser, ParsedType, QualifiedNameTypeAndId, core_version_info, VariableSourceType
 from binaryninjaui import SidebarWidget, SidebarWidgetType, Sidebar, UIActionHandler, getMonospaceFont, getThemeColor, \
 	UIContext
 from PySide6 import QtCore
@@ -287,9 +287,13 @@ class TypesSidebarWidget(SidebarWidget):
 				else:
 					return hex(h)
 
+			def type_to_str(t: Type):
+				t.platform = self.platform
+				return str(t)
+
 			def create_type_tree(root: QTreeWidgetItem, type: Type):
 				if type.type_class == TypeClass.VoidTypeClass:
-					tree = QTreeWidgetItem(["void", str(type)])
+					tree = QTreeWidgetItem(["void", type_to_str(type)])
 					root.addChild(tree)
 					if self.show_wa:
 						tree.addChild(QTreeWidgetItem(["width", hexornone(type.width)]))
@@ -297,7 +301,7 @@ class TypesSidebarWidget(SidebarWidget):
 						tree.addChild(QTreeWidgetItem(["const", boolstr(type.const)]))
 						tree.addChild(QTreeWidgetItem(["volatile", boolstr(type.volatile)]))
 				elif type.type_class == TypeClass.BoolTypeClass:
-					tree = QTreeWidgetItem(["bool", str(type)])
+					tree = QTreeWidgetItem(["bool", type_to_str(type)])
 					root.addChild(tree)
 					if self.show_wa:
 						tree.addChild(QTreeWidgetItem(["width", hexornone(type.width)]))
@@ -305,7 +309,7 @@ class TypesSidebarWidget(SidebarWidget):
 						tree.addChild(QTreeWidgetItem(["const", boolstr(type.const)]))
 						tree.addChild(QTreeWidgetItem(["volatile", boolstr(type.volatile)]))
 				elif type.type_class == TypeClass.IntegerTypeClass:
-					tree = QTreeWidgetItem(["int", str(type)])
+					tree = QTreeWidgetItem(["int", type_to_str(type)])
 					root.addChild(tree)
 					if self.show_wa:
 						tree.addChild(QTreeWidgetItem(["width", hexornone(type.width)]))
@@ -314,7 +318,7 @@ class TypesSidebarWidget(SidebarWidget):
 						tree.addChild(QTreeWidgetItem(["volatile", boolstr(type.volatile)]))
 					tree.addChild(QTreeWidgetItem(["signed", boolstr(type.signed)]))
 				elif type.type_class == TypeClass.FloatTypeClass:
-					tree = QTreeWidgetItem(["float", str(type)])
+					tree = QTreeWidgetItem(["float", type_to_str(type)])
 					root.addChild(tree)
 					if self.show_wa:
 						tree.addChild(QTreeWidgetItem(["width", hexornone(type.width)]))
@@ -322,7 +326,7 @@ class TypesSidebarWidget(SidebarWidget):
 						tree.addChild(QTreeWidgetItem(["const", boolstr(type.const)]))
 						tree.addChild(QTreeWidgetItem(["volatile", boolstr(type.volatile)]))
 				elif type.type_class == TypeClass.StructureTypeClass:
-					tree = QTreeWidgetItem(["struct", str(type)])
+					tree = QTreeWidgetItem(["struct", type_to_str(type)])
 					root.addChild(tree)
 					if self.show_wa:
 						tree.addChild(QTreeWidgetItem(["width", hexornone(type.width)]))
@@ -348,7 +352,7 @@ class TypesSidebarWidget(SidebarWidget):
 						base_structure.addChild(base_structure_type)
 						base_structures.addChild(base_structure)
 				elif type.type_class == TypeClass.EnumerationTypeClass:
-					tree = QTreeWidgetItem(["enum", str(type)])
+					tree = QTreeWidgetItem(["enum", type_to_str(type)])
 					root.addChild(tree)
 					if self.show_wa:
 						tree.addChild(QTreeWidgetItem(["width", hexornone(type.width)]))
@@ -361,7 +365,7 @@ class TypesSidebarWidget(SidebarWidget):
 						member = QTreeWidgetItem([m.name, hexornone(m.value)])
 						members.addChild(member)
 				elif type.type_class == TypeClass.PointerTypeClass:
-					tree = QTreeWidgetItem(["pointer", str(type)])
+					tree = QTreeWidgetItem(["pointer", type_to_str(type)])
 					root.addChild(tree)
 					if self.show_wa:
 						tree.addChild(QTreeWidgetItem(["width", hexornone(type.width)]))
@@ -377,7 +381,7 @@ class TypesSidebarWidget(SidebarWidget):
 						origin_tree = QTreeWidgetItem(["origin.type", str(origin_type)])
 						tree.addChild(origin_tree)
 				elif type.type_class == TypeClass.ArrayTypeClass:
-					tree = QTreeWidgetItem(["array", str(type)])
+					tree = QTreeWidgetItem(["array", type_to_str(type)])
 					root.addChild(tree)
 					if self.show_wa:
 						tree.addChild(QTreeWidgetItem(["width", hexornone(type.width)]))
@@ -389,7 +393,7 @@ class TypesSidebarWidget(SidebarWidget):
 					tree.addChild(element_type)
 					create_type_tree(element_type, type.element_type)
 				elif type.type_class == TypeClass.FunctionTypeClass:
-					tree = QTreeWidgetItem(["function", str(type)])
+					tree = QTreeWidgetItem(["function", type_to_str(type)])
 					root.addChild(tree)
 					if self.show_wa:
 						tree.addChild(QTreeWidgetItem(["width", hexornone(type.width)]))
@@ -403,6 +407,7 @@ class TypesSidebarWidget(SidebarWidget):
 						tree.addChild(QTreeWidgetItem(["calling_convention", "None"]))
 					tree.addChild(QTreeWidgetItem(["has_variable_arguments", boolstr(type.has_variable_arguments.value)]))
 					tree.addChild(QTreeWidgetItem(["can_return", boolstr(type.can_return.value)]))
+					tree.addChild(QTreeWidgetItem(["pure", boolstr(type.pure.value)]))
 					tree.addChild(QTreeWidgetItem(["system_call_number", str(type.system_call_number)]))
 					return_value = QTreeWidgetItem(["return_value"])
 					tree.addChild(return_value)
@@ -419,11 +424,18 @@ class TypesSidebarWidget(SidebarWidget):
 						else:
 							location_tree.addChild(QTreeWidgetItem(["is_default", "False"]))
 							location_tree.addChild(QTreeWidgetItem(["source_type", m.location.source_type.name]))
-							location_tree.addChild(QTreeWidgetItem(["storage", m.location.storage]))
-							location_tree.addChild(QTreeWidgetItem(["index", m.location.index]))
+							if m.location.source_type == VariableSourceType.RegisterVariableSourceType:
+								location_tree.addChild(QTreeWidgetItem(["storage", self.platform.arch.get_reg_name(m.location.storage)]))
+							elif m.location.source_type == VariableSourceType.FlagVariableSourceType:
+								location_tree.addChild(QTreeWidgetItem(["storage", self.platform.arch.get_flag_name(m.location.storage)]))
+							elif m.location.source_type == VariableSourceType.StackVariableSourceType:
+								location_tree.addChild(QTreeWidgetItem(["storage", hexornone(m.location.storage)]))
+							else:
+								location_tree.addChild(QTreeWidgetItem(["storage", hexornone(m.location.storage)]))
+							location_tree.addChild(QTreeWidgetItem(["index", hexornone(m.location.index)]))
 						parameters.addChild(parameter)
 				elif type.type_class == TypeClass.VarArgsTypeClass:
-					tree = QTreeWidgetItem(["varargs", str(type)])
+					tree = QTreeWidgetItem(["varargs", type_to_str(type)])
 					root.addChild(tree)
 					if self.show_wa:
 						tree.addChild(QTreeWidgetItem(["width", hexornone(type.width)]))
@@ -431,7 +443,7 @@ class TypesSidebarWidget(SidebarWidget):
 						tree.addChild(QTreeWidgetItem(["const", boolstr(type.const)]))
 						tree.addChild(QTreeWidgetItem(["volatile", boolstr(type.volatile)]))
 				elif type.type_class == TypeClass.ValueTypeClass:
-					tree = QTreeWidgetItem(["ValueTypeClass", str(type)])
+					tree = QTreeWidgetItem(["ValueTypeClass", type_to_str(type)])
 					root.addChild(tree)
 					if self.show_wa:
 						tree.addChild(QTreeWidgetItem(["width", hexornone(type.width)]))
@@ -439,7 +451,7 @@ class TypesSidebarWidget(SidebarWidget):
 						tree.addChild(QTreeWidgetItem(["const", boolstr(type.const)]))
 						tree.addChild(QTreeWidgetItem(["volatile", boolstr(type.volatile)]))
 				elif type.type_class == TypeClass.NamedTypeReferenceClass:
-					tree = QTreeWidgetItem(["named_type", str(type)])
+					tree = QTreeWidgetItem(["named_type", type_to_str(type)])
 					root.addChild(tree)
 					if self.show_wa:
 						tree.addChild(QTreeWidgetItem(["width", hexornone(type.width)]))
@@ -450,7 +462,7 @@ class TypesSidebarWidget(SidebarWidget):
 					tree.addChild(QTreeWidgetItem(["type_id", type.type_id]))
 					tree.addChild(QTreeWidgetItem(["name", str(type.name)]))
 				elif type.type_class == TypeClass.WideCharTypeClass:
-					tree = QTreeWidgetItem(["wchar", str(type)])
+					tree = QTreeWidgetItem(["wchar", type_to_str(type)])
 					root.addChild(tree)
 					if self.show_wa:
 						tree.addChild(QTreeWidgetItem(["width", hexornone(type.width)]))
@@ -458,7 +470,7 @@ class TypesSidebarWidget(SidebarWidget):
 						tree.addChild(QTreeWidgetItem(["const", boolstr(type.const)]))
 						tree.addChild(QTreeWidgetItem(["volatile", boolstr(type.volatile)]))
 				else:
-					tree = QTreeWidgetItem(["???", str(type)])
+					tree = QTreeWidgetItem(["???", type_to_str(type)])
 					root.addChild(tree)
 					if self.show_wa:
 						tree.addChild(QTreeWidgetItem(["width", hexornone(type.width)]))
