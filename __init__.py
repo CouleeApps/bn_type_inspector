@@ -49,6 +49,10 @@ class TypesSidebarWidget(SidebarWidget):
 		self.platformEntry = QPushButton(self)
 		self.platformMenu = QMenu(self)
 		platform_name = QSettings().value("plugin.typeInspector.platform", "windows-x86_64")
+		if platform_name not in Platform:
+			platform_name = "windows-x86_64"
+		if platform_name not in Platform:
+			platform_name = list(Platform)[0].name
 		self.platform = Platform[platform_name]
 		self.platformEntry.setText(platform_name)
 		self.platformEntry.setMenu(self.platformMenu)
